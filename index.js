@@ -66,18 +66,28 @@ app.event('message', async ({ event, say }) => {
     return;
   }
   
-  // Show typing indicator
-  await say('🤔 Processing your request...');
+  // Show typing indicator and save the message timestamp
+  const processingMsg = await say('🤔 Processing your request...');
   
   // Call Claude on your home machine
   const result = await callClaude(prompt);
+  
+  // Delete the processing message
+  try {
+    await client.chat.delete({
+      channel: event.channel,
+      ts: processingMsg.ts
+    });
+  } catch (error) {
+    console.log('Could not delete processing message:', error);
+  }
   
   // Send the result back to Slack
   await say(result);
 });
 
 // Handle app mentions (when someone types @claude)
-app.event('app_mention', async ({ event, say }) => {
+app.event('app_mention', async ({ event, say, client }) => {
   console.log('App mentioned:', event.text);
   
   // Extract the prompt (remove the bot mention)
@@ -88,8 +98,20 @@ app.event('app_mention', async ({ event, say }) => {
     return;
   }
   
-  await say('🤔 Processing your request...');
+  // Show typing indicator and save the message timestamp
+  const processingMsg = await say('🤔 Processing your request...');
   const result = await callClaude(prompt);
+  
+  // Delete the processing message
+  try {
+    await client.chat.delete({
+      channel: event.channel,
+      ts: processingMsg.ts
+    });
+  } catch (error) {
+    console.log('Could not delete processing message:', error);
+  }
+  
   await say(result);
 });
 
