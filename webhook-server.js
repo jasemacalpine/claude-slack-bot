@@ -70,11 +70,11 @@ app.post('/claude', async (req, res) => {
       res.status(500).send(`❌ Failed to start Claude Code: ${error.message}`);
     });
     
-    // Set timeout - reduce to 30 seconds for testing
+    // Set timeout - 2 minutes for Claude Code operations
     const timeout = setTimeout(() => {
       console.log('⏰ Claude Code timeout, killing process');
       child.kill('SIGTERM');
-    }, 30000); // 30 seconds for testing
+    }, 120000); // 2 minutes
     
     // Clear timeout when process closes
     child.once('close', () => {

@@ -33,22 +33,32 @@ async function callClaude(prompt) {
   }
 }
 
-// Listen for all direct messages and messages containing "claude"
-app.message(async ({ message, say, client }) => {
-  // Check if it's a DM or contains "claude"
-  const isDM = message.channel_type === 'im';
-  const mentionsClaude = /claude/i.test(message.text);
+// Listen for all messages
+app.event('message', async ({ event, say }) => {
+  // Skip if it's from a bot
+  if (event.bot_id) return;
+  
+  console.log('📨 Message event:', {
+    text: event.text,
+    channel: event.channel,
+    channel_type: event.channel_type,
+    user: event.user
+  });
+  
+  // Check if it's a DM (channel starts with 'D') or contains "claude"
+  const isDM = event.channel_type === 'im' || event.channel.startsWith('D');
+  const mentionsClaude = /claude/i.test(event.text);
   
   if (!isDM && !mentionsClaude) {
     return; // Ignore if not a DM and doesn't mention claude
   }
   
-  console.log('Received message:', message.text, 'isDM:', isDM);
+  console.log('✅ Processing message:', event.text, 'isDM:', isDM);
   
   // For DMs, use the full message. For channel messages, remove "claude"
-  let prompt = message.text;
+  let prompt = event.text;
   if (!isDM) {
-    prompt = message.text.replace(/claude/i, '').trim();
+    prompt = event.text.replace(/claude/i, '').trim();
   }
   
   if (!prompt || prompt === '') {
