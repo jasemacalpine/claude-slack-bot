@@ -1,0 +1,13 @@
+# ngrok Recovery Codes
+# KEEP THESE SECURE - Store as securely as a password
+# These are used to recover your account if you lose access to MFA
+
+2J8U8AP35W    3STZ3JSKSF
+R79ZKU47H5    AHQHNP6TVG
+K5ZCZ66DYH    WZR9P95QGK
+HH2973JFF5    YQR369AAET
+EJ48C5JRY4    945Y83335K
+
+# If you cannot find these codes, you will lose access to your account.
+# Save these recovery codes as securely as a password.
+# Recommend using a password manager such as 1Password, KeePassXC, or Bitwarden.
