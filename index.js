@@ -34,7 +34,7 @@ async function callClaude(prompt) {
 }
 
 // Listen for all messages
-app.event('message', async ({ event, say }) => {
+app.event('message', async ({ event, say, client }) => {
   // Skip if it's from a bot
   if (event.bot_id) return;
   
