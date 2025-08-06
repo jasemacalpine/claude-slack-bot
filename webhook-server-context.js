@@ -5,8 +5,9 @@ const app = express();
 // Parse JSON requests
 app.use(express.json());
 
-// Store last few messages per user (lightweight context)
-const userContexts = new Map();
+// Store conversation history with timestamps
+const conversationHistory = new Map();
+const CONTEXT_TIMEOUT = 20 * 60 * 1000; // 20 minutes
 
 // Webhook endpoint that Railway Slack bot calls
 app.post('/claude', async (req, res) => {
@@ -14,24 +15,37 @@ app.post('/claude', async (req, res) => {
   
   console.log('🎯 Received request from Slack bot:', prompt);
   
-  // Get or create context for this user
-  if (!userContexts.has(userId)) {
-    userContexts.set(userId, []);
+  // Get or create conversation history for this user
+  if (!conversationHistory.has(userId)) {
+    conversationHistory.set(userId, { messages: [], lastActivity: Date.now() });
   }
-  const context = userContexts.get(userId);
   
-  // Build prompt with last 5 messages of context
-  let fullPrompt = prompt;
-  if (context.length > 0) {
-    fullPrompt = `Recent conversation:\n${context.join('\n')}\n\nUser: ${prompt}`;
+  const userData = conversationHistory.get(userId);
+  
+  // Check if conversation has timed out
+  if (Date.now() - userData.lastActivity > CONTEXT_TIMEOUT) {
+    console.log('🔄 Conversation timeout - starting fresh');
+    userData.messages = [];
+  }
+  
+  userData.lastActivity = Date.now();
+  
+  // Build context from recent messages
+  let contextPrompt = prompt;
+  
+  if (userData.messages.length > 0) {
+    const recentMessages = userData.messages.slice(-10); // Last 5 exchanges
+    contextPrompt = `Previous conversation:
+${recentMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+User: ${prompt}`;
   }
   
   try {
     console.log('🤖 Executing Claude Code with context');
-    console.log('📝 Context messages:', context.length);
     
     // Use spawn for better process control with MCP access
-    const child = spawn('/Users/gypsytalesmini/.npm-global/bin/claude', ['-p', fullPrompt], {
+    const child = spawn('/Users/gypsytalesmini/.npm-global/bin/claude', ['-p', contextPrompt], {
       cwd: '/Users/gypsytalesmini/Documents/Gypsy-Tales_Media-V2',  // Use project directory for MCP access
       env: {
         ...process.env,
@@ -78,13 +92,13 @@ app.post('/claude', async (req, res) => {
       console.log('✅ Claude Code result length:', result.length);
       console.log('✅ First 200 chars:', result.substring(0, 200));
       
-      // Update context with this exchange
-      context.push(`User: ${prompt}`);
-      context.push(`Assistant: ${result.substring(0, 500)}...`); // Truncate long responses
+      // Store this exchange in history
+      userData.messages.push({ role: 'user', content: prompt });
+      userData.messages.push({ role: 'assistant', content: result });
       
-      // Keep only last 5 exchanges (10 messages total)
-      if (context.length > 10) {
-        context.splice(0, context.length - 10);
+      // Keep only last 20 messages (10 exchanges)
+      if (userData.messages.length > 20) {
+        userData.messages.splice(0, userData.messages.length - 20);
       }
       
       res.send(result);

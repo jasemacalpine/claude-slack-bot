@@ -11,14 +11,14 @@ const app = new App({
 });
 
 // Function to call Claude on your home machine
-async function callClaude(prompt) {
+async function callClaude(prompt, userId = 'default') {
   try {
     const response = await fetch(process.env.CLAUDE_HOME_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, userId })
     });
     
     if (!response.ok) {
@@ -76,7 +76,7 @@ app.event('message', async ({ event, say, client }) => {
   const processingMsg = await say('🤔 Processing your request...');
   
   // Call Claude on your home machine
-  const result = await callClaude(prompt);
+  const result = await callClaude(prompt, event.user);
   
   // Delete the processing message
   try {
@@ -112,7 +112,7 @@ app.event('app_mention', async ({ event, say, client }) => {
   
   // Show typing indicator and save the message timestamp
   const processingMsg = await say('🤔 Processing your request...');
-  const result = await callClaude(prompt);
+  const result = await callClaude(prompt, event.user);
   
   // Delete the processing message
   try {
