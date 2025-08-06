@@ -38,6 +38,12 @@ app.event('message', async ({ event, say }) => {
   // Skip if it's from a bot
   if (event.bot_id) return;
   
+  // Only respond to your user ID
+  const ALLOWED_USER = 'U036NNSBF6J'; // Your Slack user ID
+  if (event.user !== ALLOWED_USER) {
+    return; // Ignore messages from other users
+  }
+  
   console.log('📨 Message event:', {
     text: event.text,
     channel: event.channel,
@@ -89,6 +95,12 @@ app.event('message', async ({ event, say }) => {
 // Handle app mentions (when someone types @claude)
 app.event('app_mention', async ({ event, say, client }) => {
   console.log('App mentioned:', event.text);
+  
+  // Only respond to your user ID
+  const ALLOWED_USER = 'U036NNSBF6J';
+  if (event.user !== ALLOWED_USER) {
+    return; // Ignore mentions from other users
+  }
   
   // Extract the prompt (remove the bot mention)
   const prompt = event.text.replace(/<@[A-Z0-9]+>/g, '').trim();
