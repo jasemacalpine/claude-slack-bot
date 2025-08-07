@@ -5,33 +5,17 @@ const app = express();
 // Parse JSON requests
 app.use(express.json());
 
-// Store last few messages per user (lightweight context)
-const userContexts = new Map();
-
 // Webhook endpoint that Railway Slack bot calls
 app.post('/claude', async (req, res) => {
-  const { prompt, userId = 'default' } = req.body;
+  const { prompt } = req.body;
   
   console.log('🎯 Received request from Slack bot:', prompt);
   
-  // Get or create context for this user
-  if (!userContexts.has(userId)) {
-    userContexts.set(userId, []);
-  }
-  const context = userContexts.get(userId);
-  
-  // Build prompt with last 5 messages of context
-  let fullPrompt = prompt;
-  if (context.length > 0) {
-    fullPrompt = `Recent conversation:\n${context.join('\n')}\n\nUser: ${prompt}`;
-  }
-  
   try {
-    console.log('🤖 Executing Claude Code with context');
-    console.log('📝 Context messages:', context.length);
+    console.log('🤖 Executing Claude Code');
     
     // Use spawn for better process control with MCP access
-    const child = spawn('/Users/gypsytalesmini/.npm-global/bin/claude', ['-p', fullPrompt], {
+    const child = spawn('/Users/gypsytalesmini/.npm-global/bin/claude', ['-p', prompt], {
       cwd: '/Users/gypsytalesmini/Documents/Gypsy-Tales_Media-V2',  // Use project directory for MCP access
       env: {
         ...process.env,
@@ -63,9 +47,10 @@ app.post('/claude', async (req, res) => {
         console.error('❌ Claude Code failed');
         console.error('❌ Exit code:', code);
         console.error('❌ Signal:', signal);
+        console.error('❌ Stdout:', stdout);
         console.error('❌ Stderr:', stderr);
         
-        const errorMsg = `❌ Claude Code failed with exit code ${code}${signal ? ` (signal: ${signal})` : ''}\nStderr: ${stderr}`;
+        const errorMsg = `❌ Claude Code failed with exit code ${code}${signal ? ` (signal: ${signal})` : ''}\nOutput: ${stdout}\nStderr: ${stderr}`;
         res.send(errorMsg);
         return;
       }
@@ -77,15 +62,6 @@ app.post('/claude', async (req, res) => {
       const result = stdout || '✅ Claude Code completed (no output)';
       console.log('✅ Claude Code result length:', result.length);
       console.log('✅ First 200 chars:', result.substring(0, 200));
-      
-      // Update context with this exchange
-      context.push(`User: ${prompt}`);
-      context.push(`Assistant: ${result.substring(0, 500)}...`); // Truncate long responses
-      
-      // Keep only last 5 exchanges (10 messages total)
-      if (context.length > 10) {
-        context.splice(0, context.length - 10);
-      }
       
       res.send(result);
     });
@@ -128,5 +104,5 @@ app.listen(PORT, () => {
   console.log('🌐 Claude Code webhook server running on port', PORT);
   console.log('🎯 Endpoint: http://localhost:3001/claude');
   console.log('❤️ Health check: http://localhost:3001/health');
-  console.log('🔧 Using simple Claude Code CLI from home directory');
+  console.log('🤖 Using default Claude Code model (no context)');
 });
